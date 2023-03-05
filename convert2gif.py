@@ -35,7 +35,7 @@ def get_file_list(file_path):
         return dir_list
 
 
-BASE_DIR = 'exp_03'
+BASE_DIR = 'exp_07'
 
 gif_images = []
 image_list = get_file_list(BASE_DIR)
