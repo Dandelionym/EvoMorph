@@ -19,7 +19,6 @@
      - 
 """
 import os
-
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -57,12 +56,22 @@ class Surface:
         self.bridges = []
         self.line_length = 30
 
+        # Status
+        self.mem_bridge_lst = []
+
     def evolute(self):
         # FIND TWO RANDOM POINT PAIRS
-        x0, y0 = np.random.randint(0, self.width), np.random.randint(0, self.width)
-        x1, y1 = x0 + np.random.randint(-self.line_length, self.line_length), y0 + np.random.randint(-self.line_length, self.line_length)
-        if min([x0, x1, y0, y1]) > 0 and max([x0, x1, y0, y1]) < self.width and distance((x0, x1), (y0, y1)) > self.line_length * 0.5:
-            self.bridges.append((x0, y0, x1, y1))
+        _mem_bridge_ = 1
+        while True:
+            x0, y0 = np.random.randint(0, self.width), np.random.randint(0, self.width)
+            x1, y1 = x0 + np.random.randint(-self.line_length, self.line_length), y0 + np.random.randint(-self.line_length, self.line_length)
+            if min([x0, x1, y0, y1]) > 0 and max([x0, x1, y0, y1]) < self.width and distance((x0, x1), (y0, y1)) > self.line_length * 0.5:
+                self.bridges.append((x0, y0, x1, y1))
+                break
+            else:
+                _mem_bridge_ += 1
+        self.mem_bridge_lst.append(_mem_bridge_)
+
 
         # ADD BRIDGES BETWEEN TWO POINTS
         for m, n, p, q in self.bridges:
@@ -150,11 +159,12 @@ if __name__ == '__main__':
 
 
     surface = Surface(600)
-    surface.view_2d("Initalized State", save="7", vrange=(-1, 2))
-    for _ in tqdm(range(300)):
+    surface.view_2d("Initalized State", save="8", vrange=(-1, 2))
+    for _ in range(300):
+        print(_, surface.mem_bridge_lst)
         time.sleep(0.1)
         surface.evolute()
         if _ % 1 == 0:
-            surface.view_2d(f"Particle Surface Evolution Step: {_}", vrange=False, save="7")
+            surface.view_2d(f"Particle Surface Evolution Step: {_}", vrange=False, save="8")
 
 
