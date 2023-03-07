@@ -44,29 +44,33 @@ class Surface:
         self.bridge_comp = np.ones((width, width))
         self.every_growth = 1.0
         self.miu = 0
-        self.sigma = 16
+        self.sigma = 72
         self.sigma_inhibt = 64
-        self.alpha = 100
+        self.alpha = 200
         self.comp_func = lambda x: self.alpha * np.exp(-(x - self.miu) ** 2 / (2 * self.sigma ** 2)) / (np.sqrt(2 * np.pi) * self.sigma)
         self.inhabit_func = lambda x: -1 * 10 * np.exp(-(x - self.miu) ** 2 / (2 * self.sigma_inhibt ** 2)) / (np.sqrt(2 * np.pi) * self.sigma_inhibt)
         self.iter = 0
-        self.au_active_dist = 200
-        self.ligand_limit_dist = 60
+        self.au_active_dist = int(width / 4)
+        self.ligand_limit_dist = 240
         self.au_speed = 4
         self.bridges = []
         self.line_length = 30
 
         # Status
         self.mem_bridge_lst = []
-
+        self.locs = []
     def evolute(self):
         # FIND TWO RANDOM POINT PAIRS
         _mem_bridge_ = 1
+        _new_bridge_ = np.zeros((self.width, self.width))
+        self.mem_bridge_lst = []
         while True:
             x0, y0 = np.random.randint(0, self.width), np.random.randint(0, self.width)
             x1, y1 = x0 + np.random.randint(-self.line_length, self.line_length), y0 + np.random.randint(-self.line_length, self.line_length)
-            if min([x0, x1, y0, y1]) > 0 and max([x0, x1, y0, y1]) < self.width and distance((x0, x1), (y0, y1)) > self.line_length * 0.5:
+            if min([x0, x1, y0, y1]) > 0 and max([x0, x1, y0, y1]) < self.width and distance((x0, x1), (y0, y1)) > self.line_length * 4:
                 self.bridges.append((x0, y0, x1, y1))
+                self.locs.append((x0, y0))
+                self.locs.append((x1, y1))
                 break
             else:
                 _mem_bridge_ += 1
@@ -81,18 +85,29 @@ class Surface:
                     _distance_ = np.sqrt((i - m) ** 2 + (j - n) ** 2)
                     if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
                         if _distance_ < self.au_active_dist:
-                            self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * 1.2)
+                            self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * (self.iter / 1.1))
             for i in range(p - self.au_active_dist, p + self.au_active_dist):
-                for j in range(n - self.au_active_dist, q + self.au_active_dist):
+                for j in range(q - self.au_active_dist, q + self.au_active_dist):
                     _distance_ = np.sqrt((i - p) ** 2 + (j - q) ** 2)
                     if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
                         if _distance_ < self.au_active_dist:
-                            self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * 1.2)
+                            self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * (self.iter / 1.1))
 
+
+        # for m, n in self.locs:
+        #     for p, q in self.locs:
+        #         if (m, n) != (p, q):
+        #             A = n - q
+        #             B = p - m
+        #             C = p * (q - n) + q * (m - p)
+        #             for i in range(p, m):
+        #                 for j in range(q, n):
+        #                     dist_p2l = np.abs(A * i + B * j + C) / np.sqrt(A ** 2 + B ** 2)
+        #                     _new_bridge_[i, j] += self.comp_func((1 / dist_p2l) * self.grow_comp[i, j] * (self.iter / 1.1))
 
         random = np.random.randn(self.width ** 2).reshape(self.width, self.width)
-        self.grow_comp += 0.0000005 * random
-        self.alpha /= 1.2
+        self.grow_comp += 0.000005 * random
+        self.alpha /= 1.1
 
         # mean_ = self.grow_comp.mean()
         # for i in range(len(self.grow_comp)):
@@ -102,7 +117,7 @@ class Surface:
         #         else:
         #             self.grow_comp[i, j] *= 1 + self.grow_comp[i, j ]
 
-        self.grow_comp = min_max_norm(self.grow_comp)
+        self.grow_comp = sigmoid(self.grow_comp)
         self.iter += 1
 
 
@@ -158,13 +173,12 @@ if __name__ == '__main__':
     from tqdm import tqdm
 
 
-    surface = Surface(600)
-    surface.view_2d("Initalized State", save="8", vrange=(-1, 2))
-    for _ in range(300):
+    surface = Surface(500)
+    surface.view_2d("Initalized State", save="9_zero1", vrange=(-1, 2))
+    for _ in range(400):
         print(_, surface.mem_bridge_lst)
-        time.sleep(0.1)
         surface.evolute()
         if _ % 1 == 0:
-            surface.view_2d(f"Particle Surface Evolution Step: {_}", vrange=False, save="8")
+            surface.view_2d(f"Particle Surface Evolution Step: {_}", vrange=False, save="9_zero1")
 
 

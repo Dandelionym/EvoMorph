@@ -84,47 +84,49 @@ class Surface:
                 self.loc_trend_lst.append((x0, y0, x1, y1))
 
 
-        if self.iter < 1:
-            # ADD BRIDGES BETWEEN TWO POINTS
-            for m, n, p, q in self.loc_trend_lst:
-                for i in range(m - self.au_active_dist, m + self.au_active_dist):
-                    for j in range(n - self.au_active_dist, n + self.au_active_dist):
-                        _distance_ = np.sqrt((i - m) ** 2 + (j - n) ** 2)
-                        if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
-                            if _distance_ < self.au_active_dist:
-                                self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * 1.2)
+        # ADD BRIDGES BETWEEN TWO POINTS
+        for m, n, p, q in self.loc_trend_lst:
+            for i in range(m - self.au_active_dist, m + self.au_active_dist):
+                for j in range(n - self.au_active_dist, n + self.au_active_dist):
+                    _distance_ = np.sqrt((i - m) ** 2 + (j - n) ** 2)
+                    if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
+                        if _distance_ < self.au_active_dist:
+                            curr_state[i, j] += self.comp_func(_distance_) * (1/self.grow_comp[i, j])
 
-                for i in range(p - self.au_active_dist, p + self.au_active_dist):
-                    for j in range(n - self.au_active_dist, q + self.au_active_dist):
-                        _distance_ = np.sqrt((i - p) ** 2 + (j - q) ** 2)
-                        if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
-                            if _distance_ < self.au_active_dist:
-                                self.grow_comp[i, j] += self.comp_func(_distance_ * self.grow_comp[i, j] * 1.2)
+            for i in range(p - self.au_active_dist, p + self.au_active_dist):
+                for j in range(n - self.au_active_dist, q + self.au_active_dist):
+                    _distance_ = np.sqrt((i - p) ** 2 + (j - q) ** 2)
+                    if _distance_ > 0 and (self.width > i > 0) and (0 < j < self.width):
+                        if _distance_ < self.au_active_dist:
+                            curr_state[i, j] += self.comp_func(_distance_) * (1/self.grow_comp[i, j])
 
-                dist_2p = distance((p, q), (m, n))
-                A = n - q
-                B = p - m
-                C = p * (q - n) + q * (m - p)
-                for i in range(p, m):
-                    for j in range(q, n):
-                        dist_p2l = np.abs(A * i + B * j + C) / np.sqrt(A ** 2 + B ** 2)
-                        loc_trend[i, j] += self.comp_func(1 / dist_p2l)
+            dist_2p = distance((p, q), (m, n))
+            A = n - q
+            B = p - m
+            C = p * (q - n) + q * (m - p)
+            for i in range(p, m):
+                for j in range(q, n):
+                    dist_p2l = np.abs(A * i + B * j + C) / np.sqrt(A ** 2 + B ** 2)
+                    loc_trend[i, j] += self.comp_func(1 / dist_p2l)
 
-            random = np.random.randn(self.width ** 2).reshape(self.width, self.width)
-            self.grow_comp += curr_state * 0.5 + 0 * random * loc_trend
-            self.grow_comp = 0.01 * min_max_norm(self.grow_comp)
-        else:
-            random = np.random.randn(self.width ** 2).reshape(self.width, self.width)
-            self.grow_comp += 0 * curr_state + 0 * random * loc_trend
+            random = 0.1 * np.random.randn(self.width ** 2).reshape(self.width, self.width)
+
+            if self.iter < 1:
+                self.grow_comp += curr_state * 1 + 0 * random * loc_trend
+                # self.grow_comp = min_max_norm(self.grow_comp)
+            else:
+                self.grow_comp = (self.grow_comp * 0.995 + curr_state * 0.005) + random * loc_trend * 0.0001
 
         # self.grow_comp = sigmoid(self.grow_comp)
-        mean_ = self.grow_comp.mean()
-        for i in range(len(self.grow_comp)):
-            for j in range((len(self.grow_comp))):
-                if self.grow_comp[i, j] < mean_ * 1.2:
-                    self.grow_comp[i, j ] /= 1 + self.grow_comp[i, j ]
-                else:
-                    self.grow_comp[i, j] *= 1 + self.grow_comp[i, j ]
+
+        # mean_ = self.grow_comp.mean()
+        # for i in range(len(self.grow_comp)):
+        #     for j in range((len(self.grow_comp))):
+        #         if self.grow_comp[i, j] < mean_ * 1.2:
+        #             self.grow_comp[i, j ] /= 1 + self.grow_comp[i, j ]
+        #         else:
+        #             self.grow_comp[i, j] *= 1 + self.grow_comp[i, j ]
+
         # self.grow_comp = np.exp(self.grow_comp) / sum(np.exp(self.grow_comp))
         # Ligand limits the growth of the mountain by r=C, can escape by P(escape)=f(state)
 
@@ -139,17 +141,17 @@ class Surface:
             plot of the surface.
         """
         if vrange:
-            plt.matshow(self.grow_comp, vmin=vrange[0], vmax=vrange[1])
+            plt.matshow(self.grow_comp, vmin=vrange[0], vmax=vrange[1], cmap='tab20c')
         else:
-            plt.matshow(self.grow_comp)
+            plt.matshow(self.grow_comp, cmap='tab20c')
         # fig, axs = plt.subplots(2, 1)
         # axs[0].matshow(self.area)
         # axs[1].matshow(self.grow_comp)
         plt.title(title)
         plt.colorbar()
         if save:
-            os.makedirs('./exp_03/', exist_ok=True)
-            plt.savefig(f'./exp_03/{title}')
+            os.makedirs('./exp_10/', exist_ok=True)
+            plt.savefig(f'./exp_10/{title}', dpi=300)
         plt.show()
 
     def view_3d(self, title=""):
@@ -169,6 +171,7 @@ class Surface:
             ax.set_zlim(0, 1000)
         else:
             ax.set_zlim(0, 20000)
+
         ax.spines['top'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
         ax.spines['left'].set_visible(False)
@@ -183,7 +186,7 @@ class Surface:
 
 
 if __name__ == '__main__':
-    surface = Surface(100)
+    surface = Surface(800)
     surface.view_2d("Initalized State", vrange=(0, 1))
     for _ in range(100):
         surface.evolute()

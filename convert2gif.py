@@ -35,7 +35,7 @@ def get_file_list(file_path):
         return dir_list
 
 
-BASE_DIR = 'exp_07'
+BASE_DIR = 'exp_10'
 
 gif_images = []
 image_list = get_file_list(BASE_DIR)
@@ -46,4 +46,4 @@ print(image_list)
 for i in range(len(image_list)):
     gif_images.append(imageio.imread(os.path.join(BASE_DIR, image_list[i])))
 
-imageio.mimsave(f"evolution_{BASE_DIR}.gif", gif_images, fps=5)
+imageio.mimsave(f"evolution_{BASE_DIR}.gif", gif_images, fps=3)
